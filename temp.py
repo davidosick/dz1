@@ -31,7 +31,7 @@ def plot_data(data):
     canvas.draw()
 
 def update(val):
-    ax.set_xlim(slider.val, slider.val + 10)  # Обновляем диапазон значений по оси x
+    ax.set_xlim(slider.val, slider.val + 10)  
     canvas.draw_idle()
 
 root = tk.Tk()
@@ -44,8 +44,8 @@ fig, ax = plt.subplots()
 canvas = FigureCanvasTkAgg(fig, master=root)
 canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-slider_ax = plt.axes([0.1, 0.02, 0.8, 0.03])  # Создаем место для ползунка
-slider = Slider(slider_ax, 'X', 0, 130000, valinit=0)  # Создаем ползунок
+slider_ax = plt.axes([0.1, 0.02, 0.8, 0.03])  
+slider = Slider(slider_ax, 'X', 0, 130000, valinit=0)  
 slider.on_changed(update)  
 
 tk.mainloop()
