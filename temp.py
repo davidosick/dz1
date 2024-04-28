@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog
+import tkinter.filedialog as filedialog
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -16,29 +16,36 @@ def load_file() -> None:
             ])
 
 def plot_data(data: list[float]) -> None:
-    plt.clf()
-    plt.plot(data)
-    plt.xlabel("X")
-    plt.ylabel("Y")
-    plt.legend()
+    fig.clear()
+    fig.add_axes((0.1, 0.1, 0.8, 0.8))
+    fig.axes[0].set_xlim(0, 10)
+    fig.axes[0].plot(data)
     canvas.draw()
 
 def slider_on_change_handler(val: float) -> None:
-    ax.set_xlim(val, val + 10)  
-    canvas.draw_idle()
+    fig.axes[0].set_xlim(val, val + 10)
+    canvas.draw()
 
 root = tk.Tk()
 root.title("ДЗ1 by ТыШаКаТя")
 
-load_button = tk.Button(root, text="Выбрать файл", command=load_file)
-load_button.pack()
+frm = tk.Frame(master=root)
+frm.grid()
 
-fig, ax = plt.subplots()
-canvas = FigureCanvasTkAgg(fig, master=root)
-canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+load_button = tk.Button(master=frm, text="Выбрать файл", command=load_file)
+load_button.grid(column=0, row=0)
 
-slider_ax = plt.axes((0.1, 0.02, 0.8, 0.03))  
-slider = Slider(slider_ax, "X", 0, 130000, valinit=0)  
+fig = plt.figure(figsize=(640 / 100, 480 / 100))
+fig.add_axes((0.1, 0.1, 0.8, 0.8))
+fig.axes[0].set_xlim(0, 10)
+canvas = FigureCanvasTkAgg(master=frm, figure=fig)
+canvas.get_tk_widget().grid(column=0, row=1)
+
+slider_fig = plt.figure(figsize=(640 / 100, 48 / 100))
+slider_fig.add_axes((0.1, 0, 0.8, 1))
+slider = Slider(slider_fig.axes[0], "", 0, 130000, valinit=0)
 slider.on_changed(slider_on_change_handler)
+slider_canvas = FigureCanvasTkAgg(master=frm, figure=slider_fig)
+slider_canvas.get_tk_widget().grid(column=0, row=2)
 
 root.mainloop()
