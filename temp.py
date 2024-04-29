@@ -3,11 +3,13 @@ from tkinter import filedialog
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from tkinter import ttk 
 #from matplotlib.widgets import Slider
 
 global voltage_numbers, ampere_numbers
 
 def load_file_voltage() -> None:
+    global voltage_numbers
     data = load_file()
 
     voltage_numbers = [[float(num.replace(',', '.')) 
@@ -15,8 +17,10 @@ def load_file_voltage() -> None:
                         for line in data]
 
     plot_data(voltage_numbers)
+    combobox.current(0)
 
 def load_file_ampere() -> None:
+    global ampere_numbers
     data = load_file()
 
     ampere_numbers = [[float(num.replace(',', '.')) 
@@ -24,6 +28,7 @@ def load_file_ampere() -> None:
                         for line in data]
 
     plot_data(ampere_numbers)
+    combobox.current(1)
 
 def load_file():
     filepath = filedialog.askopenfilename(filetypes=[("TXT файлы", "*.txt")])
@@ -35,9 +40,18 @@ def load_file():
         return data
 
 def plot_data(data: list[float]) -> None:
+    plt.clf()
     plt.plot(data)
     plt.legend()
     canvas.draw()
+
+def select_graph(event):
+    global voltage_numbers, ampere_numbers
+    selection = combobox.current() 
+    if selection == 0:
+        plot_data(voltage_numbers)
+    elif selection == 1:
+        plot_data(ampere_numbers)
 
 '''def slider_on_change_handler(val: float) -> None:
     ax.set_xlim(val, val + 10)  
@@ -46,13 +60,18 @@ def plot_data(data: list[float]) -> None:
 root = tk.Tk()
 root.title("ДЗ1 by ТыШаКаТя")
 
-plt.clf()
+
 
 load_button_voltage = tk.Button(root, text="Напряжение (U)", command=load_file_voltage)
 load_button_voltage.pack()
 
 load_button_voltage = tk.Button(root, text="Сила тока (I)", command=load_file_ampere)
 load_button_voltage.pack()
+
+combobox = ttk.Combobox(root, values=["Напряжение", "Сила тока"], state="readonly")
+combobox.current(0) 
+combobox.pack()
+combobox.bind("<<ComboboxSelected>>", select_graph)
 
 fig, ax = plt.subplots()
 ax.grid(True)
