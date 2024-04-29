@@ -9,11 +9,13 @@ def load_file() -> None:
     filepath = filedialog.askopenfilename(filetypes=[("TXT файлы", "*.txt")])
     if filepath:
         with open(filepath, "r") as file:
-            plot_data([
-                float(num.replace(",", ".")) 
-                for line in file.readlines() if line.strip() 
-                for num in line.split("\t")
-            ])
+            text = file.read()
+
+        data = text.strip().split('\n')
+
+        plot_data([[float(num.replace(',', '.')) 
+                    for num in line.split('\t')] 
+                    for line in data])
 
 def plot_data(data: list[float]) -> None:
     plt.clf()
