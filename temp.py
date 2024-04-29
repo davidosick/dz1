@@ -61,14 +61,16 @@ root = tk.Tk()
 root.title("ДЗ1 by ТыШаКаТя")
 
 
+button_frame = tk.Frame(root)
+button_frame.pack(side=tk.TOP)
 
-load_button_voltage = tk.Button(root, text="Напряжение (U)", command=load_file_voltage)
-load_button_voltage.pack()
+load_button_voltage = tk.Button(button_frame, text="+ Данные напряжения (U)", command=load_file_voltage)
+load_button_voltage.pack(side=tk.LEFT, padx=5)
 
-load_button_voltage = tk.Button(root, text="Сила тока (I)", command=load_file_ampere)
-load_button_voltage.pack()
+load_button_voltage = tk.Button(button_frame, text="+ Данные силы тока (I)", command=load_file_ampere)
+load_button_voltage.pack(side=tk.RIGHT, padx=5)
 
-combobox = ttk.Combobox(root, values=["Напряжение", "Сила тока"], state="readonly")
+combobox = ttk.Combobox(root, values=["Напряжение (U)", "Сила тока (I)"], state="readonly")
 combobox.current(0) 
 combobox.pack()
 combobox.bind("<<ComboboxSelected>>", select_graph)
@@ -76,7 +78,7 @@ combobox.bind("<<ComboboxSelected>>", select_graph)
 fig, ax = plt.subplots()
 ax.grid(True)
 canvas = FigureCanvasTkAgg(fig, master=root)
-canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
 plt.xlabel("X")
 plt.ylabel("Y")
 
