@@ -87,3 +87,4 @@ slider = Slider(slider_ax, "X", 0, 130000, valinit=0)
 slider.on_changed(slider_on_change_handler)'''
 
 root.mainloop()
+#MAIN
