@@ -75,6 +75,35 @@ combobox.current(0)
 combobox.pack()
 combobox.bind("<<ComboboxSelected>>", select_graph)
 
+global selected_items
+selected_items = []
+def on_select(event):
+    global selected_items
+    for item in tree.selection():
+        item_text = tree.item(item, "text")
+        if item_text[2:] not in selected_items:
+            selected_items.append(item_text)
+            tree.item(tree.selection(), text=f"+ {item_text}")
+        else:
+            selected_items.remove(item_text[2:])
+            tree.item(tree.selection(), text=item_text[2:])
+    print(selected_items)
+
+
+tree = ttk.Treeview(root, selectmode="extended")
+tree.pack(side=tk.RIGHT, fill="both", expand=True)
+
+scrollbar = ttk.Scrollbar(root, orient="vertical", command=tree.yview)
+scrollbar.pack(side="right", fill="y", anchor="e") 
+
+tree.configure(yscrollcommand=scrollbar.set)
+
+tree.bind("<<TreeviewSelect>>", on_select)
+
+for i in range(1, 50):
+    tree.insert("", "end", text=f"График {i}")
+
+
 fig, ax = plt.subplots()
 ax.grid(True)
 canvas = FigureCanvasTkAgg(fig, master=root)
@@ -87,4 +116,3 @@ slider = Slider(slider_ax, "X", 0, 130000, valinit=0)
 slider.on_changed(slider_on_change_handler)'''
 
 root.mainloop()
-#MAIN
