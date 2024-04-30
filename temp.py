@@ -91,6 +91,15 @@ def select_graph(event):
 root = tk.Tk()
 root.title("ДЗ1 by ТыШаКаТя")
 
+def clear_select() -> None:
+    global selected_items
+    selected_items = []
+    selection = combobox.current() 
+    if selection == VOLTAGE:
+        update_graph_list(voltage_numbers, 'U')
+    elif selection == AMPERE:
+        update_graph_list(ampere_numbers, 'I')
+    return
 
 button_frame = tk.Frame(root)
 button_frame.pack(side=tk.TOP)
@@ -98,8 +107,11 @@ button_frame.pack(side=tk.TOP)
 load_button_voltage = tk.Button(button_frame, text="+ Данные напряжения (U)", command=load_file_voltage)
 load_button_voltage.pack(side=tk.LEFT, padx=5)
 
-load_button_voltage = tk.Button(button_frame, text="+ Данные силы тока (I)", command=load_file_ampere)
-load_button_voltage.pack(side=tk.RIGHT, padx=5)
+load_button_ampere = tk.Button(button_frame, text="+ Данные силы тока (I)", command=load_file_ampere)
+load_button_ampere.pack(side=tk.RIGHT, padx=5)
+
+clear_select_button = tk.Button(button_frame, text="Очистить выбор", command=clear_select)
+clear_select_button.pack(side=tk.RIGHT, padx=10)
 
 combobox = ttk.Combobox(root, values=["Напряжение (U)", "Сила тока (I)"], state="readonly")
 combobox.current(VOLTAGE) 
