@@ -3,8 +3,9 @@ from tkinter import filedialog
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from tkinter import ttk 
-#from matplotlib.widgets import Slider
+from tkinter import ttk
+
+# from matplotlib.widgets import Slider
 
 '''class Graph:
     def __init__(self, data):
@@ -22,29 +23,32 @@ AMPERE = 1
 
 global voltage_numbers, ampere_numbers
 
+
 def load_file_voltage() -> None:
     global voltage_numbers
     data = load_file()
 
-    voltage_numbers = [[float(num.replace(',', '.')) 
-                        for num in line.split('\t')] 
-                        for line in data]
+    voltage_numbers = [[float(num.replace(',', '.'))
+                        for num in line.split('\t')]
+                       for line in data]
 
-    #plot_data(voltage_numbers)
+    # plot_data(voltage_numbers)
     combobox.current(VOLTAGE)
     update_graph_list(voltage_numbers, 'U')
+
 
 def load_file_ampere() -> None:
     global ampere_numbers
     data = load_file()
 
-    ampere_numbers = [[float(num.replace(',', '.')) 
-                        for num in line.split('\t')] 
-                        for line in data]
+    ampere_numbers = [[float(num.replace(',', '.'))
+                       for num in line.split('\t')]
+                      for line in data]
 
-    #plot_data(ampere_numbers)
+    # plot_data(ampere_numbers)
     combobox.current(AMPERE)
     update_graph_list(ampere_numbers, 'I')
+
 
 def load_file() -> list:
     filepath = filedialog.askopenfilename(filetypes=[("TXT файлы", "*.txt")])
@@ -54,35 +58,41 @@ def load_file() -> list:
 
         data = text.strip().split('\n')
         return data
-    
-def update_graph_list(data, letter = '?') -> None:
+
+
+def update_graph_list(data, letter='?') -> None:
+    """
+    Выводит список всех недублирующихся строк (пакетов) от 1 до N с шагом 2
+    """
     global selected_items
     selected_items = []
     tree.delete(*tree.get_children())
-    for i in range(1, len(data)):
+    for i in range(0, len(data), 2):
         tree.insert("", "end", text=f"График {letter}({i})")
+
 
 def plot_data(data: list[list[float]]) -> list:
     plt.clf()
-    line_objects = [] 
+    line_objects = []
     for dataset in data:
-        line, = plt.plot(dataset)  
-        line_objects.append(line) 
+        line, = plt.plot(dataset)
+        line_objects.append(line)
     plt.legend()
     canvas.draw()
-    return line_objects  
+    return line_objects
 
 
 def select_graph(event):
     global voltage_numbers, ampere_numbers
-    selection = combobox.current() 
+    selection = combobox.current()
     if selection == VOLTAGE:
         update_graph_list(voltage_numbers, 'U')
-        #plot_data(voltage_numbers)
+        # plot_data(voltage_numbers)
     elif selection == AMPERE:
         update_graph_list(ampere_numbers, 'I')
-        #plot_data(ampere_numbers)
+        # plot_data(ampere_numbers)
     plot_data(selected_items)
+
 
 '''def slider_on_change_handler(val: float) -> None:
     ax.set_xlim(val, val + 10)  
@@ -91,15 +101,17 @@ def select_graph(event):
 root = tk.Tk()
 root.title("ДЗ1 by ТыШаКаТя")
 
+
 def clear_select() -> None:
     global selected_items
     selected_items = []
-    selection = combobox.current() 
+    selection = combobox.current()
     if selection == VOLTAGE:
         update_graph_list(voltage_numbers, 'U')
     elif selection == AMPERE:
         update_graph_list(ampere_numbers, 'I')
     return
+
 
 button_frame = tk.Frame(root)
 button_frame.pack(side=tk.TOP)
@@ -114,12 +126,14 @@ clear_select_button = tk.Button(button_frame, text="Очистить выбор"
 clear_select_button.pack(side=tk.RIGHT, padx=10)
 
 combobox = ttk.Combobox(root, values=["Напряжение (U)", "Сила тока (I)"], state="readonly")
-combobox.current(VOLTAGE) 
+combobox.current(VOLTAGE)
 combobox.pack()
 combobox.bind("<<ComboboxSelected>>", select_graph)
 
 global selected_items
 selected_items = []
+
+
 def tree_on_select(event):
     global selected_items
     sel_now = -1
@@ -136,22 +150,21 @@ def tree_on_select(event):
     filtered_data = []
     for index in selected_items:
         if combobox.current() == VOLTAGE:
-            filtered_data.append(voltage_numbers[index]) 
+            filtered_data.append(voltage_numbers[index])
         elif combobox.current() == AMPERE:
             filtered_data.append(ampere_numbers[index])
 
-
     line_objects = plot_data(filtered_data)
     update_cells_colors(line_objects)
-    
-    #print(filtered_data)
+
+    # print(filtered_data)
+
 
 def update_cells_colors(line_objects) -> None:
-
     global selected_items
-    colors = [line.get_color() for line in line_objects] 
+    colors = [line.get_color() for line in line_objects]
 
-    for index in range(0,len(selected_items)):
+    for index in range(0, len(selected_items)):
         tree.tag_configure(f'mytag_{index}', background=colors[index], foreground='white')
         tree.item(tree.get_children()[selected_items[index]], tags=(f'mytag_{index}',))
 
@@ -160,12 +173,11 @@ tree = ttk.Treeview(root, selectmode="extended")
 tree.pack(side=tk.RIGHT, fill="both", expand=True)
 
 scrollbar = ttk.Scrollbar(root, orient="vertical", command=tree.yview)
-scrollbar.pack(side="right", fill="y", anchor="e") 
+scrollbar.pack(side="right", fill="y", anchor="e")
 
 tree.configure(yscrollcommand=scrollbar.set)
 
 tree.bind("<<TreeviewSelect>>", tree_on_select)
-
 
 fig, ax = plt.subplots()
 ax.grid(True)
