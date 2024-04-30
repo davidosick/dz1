@@ -62,12 +62,15 @@ def update_graph_list(data, letter = '?') -> None:
     for i in range(1, len(data)):
         tree.insert("", "end", text=f"График {letter}({i})")
 
-def plot_data(data: list[list[float]]) -> None:
+def plot_data(data: list[list[float]]) -> list:
     plt.clf()
+    line_objects = [] 
     for dataset in data:
-        plt.plot(dataset)
+        line, = plt.plot(dataset)  
+        line_objects.append(line) 
     plt.legend()
     canvas.draw()
+    return line_objects  
 
 
 def select_graph(event):
@@ -107,27 +110,38 @@ global selected_items
 selected_items = []
 def tree_on_select(event):
     global selected_items
-    
+    sel_now = -1
     for item in tree.selection():
-        sel_now = tree.index(item)+1
+        sel_now = tree.index(item)
         item_text = tree.item(item, "text")
         if sel_now not in selected_items:
             selected_items.append(sel_now)
             tree.item(tree.selection(), text=f"+ {item_text}")
         else:
             selected_items.remove(sel_now)
-            tree.item(tree.selection(), text=item_text[2:])
+            tree.item(tree.selection(), text=item_text[2:], tags="")
 
     filtered_data = []
     for index in selected_items:
         if combobox.current() == VOLTAGE:
-            filtered_data.append(voltage_numbers[index - 1]) 
+            filtered_data.append(voltage_numbers[index]) 
         elif combobox.current() == AMPERE:
-            filtered_data.append(ampere_numbers[index - 1])
+            filtered_data.append(ampere_numbers[index])
 
 
-    plot_data(filtered_data)
-    print(filtered_data)
+    line_objects = plot_data(filtered_data)
+    update_cells_colors(line_objects)
+    
+    #print(filtered_data)
+
+def update_cells_colors(line_objects) -> None:
+
+    global selected_items
+    colors = [line.get_color() for line in line_objects] 
+
+    for index in range(0,len(selected_items)):
+        tree.tag_configure(f'mytag_{index}', background=colors[index], foreground='white')
+        tree.item(tree.get_children()[selected_items[index]], tags=(f'mytag_{index}',))
 
 
 tree = ttk.Treeview(root, selectmode="extended")
