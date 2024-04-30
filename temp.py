@@ -41,13 +41,16 @@ def load_file() -> list[str] | None:
     if filepath := filedialog.askopenfilename(filetypes=[("TXT файлы", "*.txt")]):
         with open(filepath, "r") as file:
             return file.read().strip().split('\n')
-    
+
+def parse_file_lines(lines: list[str]) -> list[list[float]]:
+    return [[float(num.replace(',', '.'))
+             for num in line.split('\t')]
+             for i, line in enumerate(lines) if i % 2 == 0]
+
 def load_file_voltage() -> None:
     global voltage_numbers
     if data := load_file():
-        voltage_numbers = [[float(num.replace(',', '.')) 
-                            for num in line.split('\t')] 
-                            for line in data]
+        voltage_numbers = parse_file_lines(data)
 
         #plot_data(voltage_numbers)
         combobox.current(ComboboxSelection.VOLTAGE)
@@ -56,9 +59,7 @@ def load_file_voltage() -> None:
 def load_file_ampere() -> None:
     global ampere_numbers
     if data := load_file():
-        ampere_numbers = [[float(num.replace(',', '.')) 
-                           for num in line.split('\t')] 
-                           for i, line in enumerate(data) if i % 2 == 0]
+        ampere_numbers = parse_file_lines(data)
 
         #plot_data(ampere_numbers)
         combobox.current(ComboboxSelection.AMPERE)
@@ -79,7 +80,7 @@ def update_graph_list(data: list[list[float]], letter = '?') -> None:
 
     length = len(data)
     tree.delete(*tree.get_children())
-    for i in range(1, length):
+    for i in range(length):
         tree.insert("", tk.END, text=f"График {letter}({i + 1})")
 
     experiment_time = length / 10
