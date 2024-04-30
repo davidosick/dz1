@@ -68,16 +68,18 @@ def update_graph_list(data, letter='?') -> None:
     selected_items = []
     tree.delete(*tree.get_children())
     for i in range(0, len(data), 2):
-        tree.insert("", "end", text=f"График {letter}({i})")
+        tree.insert("", "end", text=f"График {letter}({i + 1})")
 
 
-def plot_data(data: list[list[float]]) -> list:
+def plot_data(data: list[list[float]], label) -> list:
     plt.clf()
     line_objects = []
     for dataset in data:
-        line, = plt.plot(dataset)
+        line, = plt.plot(dataset, label=label)
         line_objects.append(line)
-    plt.legend()
+    plt.xlabel("Время, сек")
+    plt.ylabel(label)
+    plt.legend(fontsize="x-large")
     canvas.draw()
     return line_objects
 
@@ -87,11 +89,11 @@ def select_graph(event):
     selection = combobox.current()
     if selection == VOLTAGE:
         update_graph_list(voltage_numbers, 'U')
-        # plot_data(voltage_numbers)
+        plot_data(selected_items, "U")
     elif selection == AMPERE:
         update_graph_list(ampere_numbers, 'I')
-        # plot_data(ampere_numbers)
-    plot_data(selected_items)
+        plot_data(selected_items, "I")
+    # plot_data(selected_items)
 
 
 '''def slider_on_change_handler(val: float) -> None:
@@ -148,13 +150,16 @@ def tree_on_select(event):
             tree.item(tree.selection(), text=item_text[2:], tags="")
 
     filtered_data = []
+    label = ''
     for index in selected_items:
         if combobox.current() == VOLTAGE:
             filtered_data.append(voltage_numbers[index])
+            label = "U"
         elif combobox.current() == AMPERE:
             filtered_data.append(ampere_numbers[index])
+            label = "I"
 
-    line_objects = plot_data(filtered_data)
+    line_objects = plot_data(filtered_data, label)
     update_cells_colors(line_objects)
 
     # print(filtered_data)
