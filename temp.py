@@ -96,14 +96,14 @@ def plot_data(data: list[list[float]], label: str) -> list[Line2D]:
 
 
 def select_graph(event) -> None:
-    global voltage_numbers, ampere_numbers
+    global voltage_numbers, ampere_numbers, selected_items
     match combobox.current():
         case ComboboxSelection.VOLTAGE:
             update_graph_list(voltage_numbers, "U")
-            plot_data(voltage_numbers, "U")
+            plot_data(selected_items, "U")
         case ComboboxSelection.AMPERE:
             update_graph_list(ampere_numbers, "I")
-            plot_data(ampere_numbers, "U")
+            plot_data(selected_items, "I")
 
 
 def tree_on_select(event) -> None:
