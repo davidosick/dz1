@@ -9,9 +9,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 class ComboboxSelection:
     VOLTAGE = 0
     AMPERE = 1
+    INSTANT_POWER = 2  # Опция для мгновенных мощностей
 
 
-global voltage_numbers, ampere_numbers
+global voltage_numbers, ampere_numbers, instant_power_data
 
 global experiment_time
 experiment_time: float
@@ -58,6 +59,17 @@ def load_file_ampere() -> None:
         update_graph_list(ampere_numbers, 'I')
 
 
+def load_file_instant_power() -> None:
+    global voltage_numbers, ampere_numbers, instant_power_data
+    if voltage_numbers and ampere_numbers:
+        instant_power_data = [calculate_instantaneous_power(voltage_line, current_line) for voltage_line, current_line in zip(voltage_numbers, ampere_numbers)]
+        update_graph_list(range(1, len(instant_power_data) + 1), 'Мгновенная мощность')
+
+
+def calculate_instantaneous_power(voltage_data: list[float], current_data: list[float]) -> list[float]:
+    return [voltage * current for voltage, current in zip(voltage_data, current_data)]
+
+
 def clear_select() -> None:
     global selected_items
     selected_items = []
@@ -66,6 +78,8 @@ def clear_select() -> None:
             update_graph_list(voltage_numbers, 'U')
         case ComboboxSelection.AMPERE:
             update_graph_list(ampere_numbers, 'I')
+        case ComboboxSelection.INSTANT_POWER:
+            update_graph_list(instant_power_data, 'Мгновенная мощность')
     plot_data(selected_items, "U")  # просто чистим холст
 
 
@@ -86,10 +100,13 @@ def plot_data(data: list[list[float]], label: str) -> list[Line2D]:
     plt.clf()
     time_seconds = [i / 800 for i in range(1, len(data[0]) + 1)]
 
-    line_objects = [plt.plot(time_seconds, dataset,
-                             label=f"{label}({(voltage_numbers.index(datas) + 1 if label == 'U' else ampere_numbers.index(datas) + 1)})")[
-                        0]
-                    for datas, dataset in zip(data, voltage_numbers if label == 'U' else ampere_numbers)]
+    if label in ["U", "I"]:
+        line_objects = [plt.plot(time_seconds, dataset,
+                                 label=f"{label}({(voltage_numbers.index(datas) + 1 if label == 'U' else ampere_numbers.index(datas) + 1)})")[
+                            0]
+                        for datas, dataset in zip(data, voltage_numbers if label == 'U' else ampere_numbers)]
+    elif label == "Мгновенная мощность":
+        line_objects = [plt.plot(time_seconds, p_data, label="Мгновенная мощность")[0] for p_data in data]
 
     ax.grid(True)
     plt.xlabel("Время, сек")
@@ -106,11 +123,13 @@ def select_graph(event) -> None:
             update_graph_list(voltage_numbers, "U")
         case ComboboxSelection.AMPERE:
             update_graph_list(ampere_numbers, "I")
+        case ComboboxSelection.INSTANT_POWER:
+            update_graph_list(instant_power_data, "Мгновенная мощность")
     plot_data(selected_items, "U")  # просто чистим холст
 
 
 def tree_on_select(event) -> None:
-    if (len(tree.selection()) <= 0):
+    if len(tree.selection()) <= 0:
         return
     global selected_items
     for item in tree.selection():
@@ -131,6 +150,9 @@ def tree_on_select(event) -> None:
         case ComboboxSelection.AMPERE:
             filtered_data = [ampere_numbers[index] for index in selected_items]
             label = "I"
+        case ComboboxSelection.INSTANT_POWER:
+            filtered_data = [instant_power_data[index] for index in selected_items]
+            label = "Мгновенная мощность"
 
     update_cells_colors(plot_data(filtered_data, label))
     tree.selection_remove(item)
@@ -157,10 +179,13 @@ load_button_voltage.pack(side=tk.LEFT, padx=5)
 load_button_ampere = tk.Button(button_frame, text="+ Данные силы тока (I)", command=load_file_ampere)
 load_button_ampere.pack(side=tk.RIGHT, padx=5)
 
+load_button_instant_power = tk.Button(button_frame, text="+ Мгновенные мощности", command=load_file_instant_power)
+load_button_instant_power.pack(side=tk.RIGHT, padx=5)
+
 clear_select_button = tk.Button(button_frame, text="Очистить выбор", command=clear_select)
 clear_select_button.pack(side=tk.RIGHT, padx=10)
 
-combobox = ttk.Combobox(root, values=["Напряжение (U)", "Сила тока (I)"], state="readonly")
+combobox = ttk.Combobox(root, values=["Напряжение (U)", "Сила тока (I)", "Мгновенная мощность"], state="readonly")
 combobox.current(ComboboxSelection.VOLTAGE)
 combobox.pack()
 combobox.bind("<<ComboboxSelected>>", select_graph)
