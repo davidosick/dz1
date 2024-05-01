@@ -66,7 +66,7 @@ def clear_select() -> None:
             update_graph_list(voltage_numbers, 'U')
         case ComboboxSelection.AMPERE:
             update_graph_list(ampere_numbers, 'I')
-    plot_data(selected_items, "U") # просто чистим холст
+    plot_data(selected_items, "U")  # просто чистим холст
 
 
 def update_graph_list(data: list[list[float]], letter='?') -> None:
@@ -84,8 +84,11 @@ def update_graph_list(data: list[list[float]], letter='?') -> None:
 
 def plot_data(data: list[list[float]], label: str) -> list[Line2D]:
     plt.clf()
-    line_objects = [plt.plot(dataset, label=f"{label}({(voltage_numbers.index(datas)+1 if label == 'U' 
-                                                        else ampere_numbers.index(datas)+1)})")[0] 
+    time_seconds = [i / 800 for i in range(1, len(data[0]) + 1)]
+
+    line_objects = [plt.plot(time_seconds, dataset,
+                             label=f"{label}({(voltage_numbers.index(datas) + 1 if label == 'U' else ampere_numbers.index(datas) + 1)})")[
+                        0]
                     for datas, dataset in zip(data, voltage_numbers if label == 'U' else ampere_numbers)]
 
     ax.grid(True)
@@ -103,11 +106,11 @@ def select_graph(event) -> None:
             update_graph_list(voltage_numbers, "U")
         case ComboboxSelection.AMPERE:
             update_graph_list(ampere_numbers, "I")
-    plot_data(selected_items, "U") # просто чистим холст
+    plot_data(selected_items, "U")  # просто чистим холст
 
 
 def tree_on_select(event) -> None:
-    if(len(tree.selection()) <= 0):
+    if (len(tree.selection()) <= 0):
         return
     global selected_items
     for item in tree.selection():
@@ -180,6 +183,5 @@ canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=tk.TRUE)
 
 time_label = ttk.Label(root, text=f"Время:")
 time_label.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=tk.TRUE)
-
 
 root.mainloop()
