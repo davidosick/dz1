@@ -66,6 +66,7 @@ def clear_select() -> None:
             update_graph_list(voltage_numbers, 'U')
         case ComboboxSelection.AMPERE:
             update_graph_list(ampere_numbers, 'I')
+    plot_data(selected_items, "U") # просто чистим холст
 
 
 def update_graph_list(data: list[list[float]], letter='?') -> None:
@@ -100,10 +101,9 @@ def select_graph(event) -> None:
     match combobox.current():
         case ComboboxSelection.VOLTAGE:
             update_graph_list(voltage_numbers, "U")
-            plot_data(selected_items, "U")
         case ComboboxSelection.AMPERE:
             update_graph_list(ampere_numbers, "I")
-            plot_data(selected_items, "I")
+    plot_data(selected_items, "U") # просто чистим холст
 
 
 def tree_on_select(event) -> None:
