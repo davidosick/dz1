@@ -106,7 +106,8 @@ def plot_data(data: list[list[float]], label: str) -> list[Line2D]:
                             0]
                         for datas, dataset in zip(data, voltage_numbers if label == 'U' else ampere_numbers)]
     elif label == "Мгновенная мощность":
-        line_objects = [plt.plot(time_seconds, p_data, label="Мгновенная мощность")[0] for p_data in data]
+        label += " p(t), Вт"
+        line_objects = [plt.plot(time_seconds, p_data, label=f"{label} ({(instant_power_data.index(p_data) + 1)})")[0] for p_data in data]
 
     ax.grid(True)
     plt.xlabel("Время, сек")
@@ -173,17 +174,17 @@ root.title("ДЗ1 by ТыШаКаТя")
 button_frame = tk.Frame(root)
 button_frame.pack(side=tk.TOP)
 
+clear_select_button = tk.Button(button_frame, text="Очистить выбор", command=clear_select)
+clear_select_button.pack(side=tk.RIGHT, padx=10)
+
 load_button_voltage = tk.Button(button_frame, text="+ Данные напряжения (U)", command=load_file_voltage)
 load_button_voltage.pack(side=tk.LEFT, padx=5)
 
 load_button_ampere = tk.Button(button_frame, text="+ Данные силы тока (I)", command=load_file_ampere)
-load_button_ampere.pack(side=tk.RIGHT, padx=5)
+load_button_ampere.pack(side=tk.LEFT, padx=5)
 
 load_button_instant_power = tk.Button(button_frame, text="+ Мгновенные мощности", command=load_file_instant_power)
-load_button_instant_power.pack(side=tk.RIGHT, padx=5)
-
-clear_select_button = tk.Button(button_frame, text="Очистить выбор", command=clear_select)
-clear_select_button.pack(side=tk.RIGHT, padx=10)
+load_button_instant_power.pack(side=tk.LEFT, padx=5)
 
 combobox = ttk.Combobox(root, values=["Напряжение (U)", "Сила тока (I)", "Мгновенная мощность"], state="readonly")
 combobox.current(ComboboxSelection.VOLTAGE)
