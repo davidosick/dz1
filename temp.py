@@ -83,7 +83,10 @@ def update_graph_list(data: list[list[float]], letter='?') -> None:
 
 def plot_data(data: list[list[float]], label: str) -> list[Line2D]:
     plt.clf()
-    line_objects = [plt.plot(dataset, label=label)[0] for dataset in data]
+    line_objects = [plt.plot(dataset, label=f"{label}({(voltage_numbers.index(datas)+1 if label == 'U' 
+                                                        else ampere_numbers.index(datas)+1)})")[0] 
+                    for datas, dataset in zip(data, voltage_numbers if label == 'U' else ampere_numbers)]
+
     ax.grid(True)
     plt.xlabel("Время, сек")
     plt.ylabel(label)
@@ -104,6 +107,8 @@ def select_graph(event) -> None:
 
 
 def tree_on_select(event) -> None:
+    if(len(tree.selection()) <= 0):
+        return
     global selected_items
     for item in tree.selection():
         item_text = tree.item(item, "text")
@@ -125,6 +130,7 @@ def tree_on_select(event) -> None:
             label = "I"
 
     update_cells_colors(plot_data(filtered_data, label))
+    tree.selection_remove(item)
 
 
 def update_cells_colors(line_objects: list[Line2D]) -> None:
