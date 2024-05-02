@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, filedialog
+from tkinter import messagebox
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -61,8 +62,12 @@ def load_file_ampere() -> None:
 
 def load_file_instant_power() -> None:
     global voltage_numbers, ampere_numbers, instant_power_data
+    if('voltage_numbers' not in globals() or 'ampere_numbers' not in globals() or len(ampere_numbers) <= 0 or len(voltage_numbers) <= 0):
+        return messagebox.showerror("Ошибка", "Вы не загрузили значения напряжения или силы тока")
     if voltage_numbers and ampere_numbers:
         instant_power_data = [calculate_instantaneous_power(voltage_line, current_line) for voltage_line, current_line in zip(voltage_numbers, ampere_numbers)]
+
+        combobox.current(ComboboxSelection.INSTANT_POWER)
         update_graph_list(range(1, len(instant_power_data) + 1), 'Мгновенная мощность')
 
 
@@ -89,8 +94,13 @@ def update_graph_list(data: list[list[float]], letter='?') -> None:
 
     length = len(data)
     tree.delete(*tree.get_children())
+    
     for i in range(length):
-        tree.insert("", tk.END, text=f"График {letter}({i + 1})")
+        if (letter == 'U' or letter == 'I'):
+            text = f"График {letter}({i + 1})"
+        else:
+            text = f"{letter}({i+1})"
+        tree.insert("", tk.END, text=text)
 
     experiment_time = length / 10
     time_label.configure(text=f"Время: {time_format(experiment_time)}")
