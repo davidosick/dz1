@@ -98,7 +98,8 @@ def update_graph_list(data: list[list[float]], letter='?') -> None:
 
 def plot_data(data: list[list[float]], label: str) -> list[Line2D]:
     plt.clf()
-    time_seconds = [i / 800 for i in range(1, len(data[0]) + 1)]
+    if(len(data) > 0):
+        time_seconds = [i / 800 for i in range(1, len(data[0]) + 1)]
 
     if label in ["U", "I"]:
         line_objects = [plt.plot(time_seconds, dataset,
