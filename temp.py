@@ -98,6 +98,7 @@ def update_graph_list(data: list[list[float]], letter='?') -> None:
 
 def plot_data(data: list[list[float]], label: str) -> list[Line2D]:
     plt.clf()
+    plt.grid(True)
     if(len(data) > 0):
         time_seconds = [i / 800 for i in range(1, len(data[0]) + 1)]
 
@@ -109,8 +110,8 @@ def plot_data(data: list[list[float]], label: str) -> list[Line2D]:
     elif label == "Мгновенная мощность":
         label += " p(t), Вт"
         line_objects = [plt.plot(time_seconds, p_data, label=f"{label} ({(instant_power_data.index(p_data) + 1)})")[0] for p_data in data]
+    
 
-    ax.grid(True)
     plt.xlabel("Время, сек")
     plt.ylabel(label)
     plt.legend(fontsize="x-large")
