@@ -13,6 +13,7 @@ class ComboboxSelection:
 
     all = [0, 1, 2]
 
+
 TITLES: dict[int, str] = {
     ComboboxSelection.VOLTAGE: "Напряжение",
     ComboboxSelection.CURRENT: "Сила тока",
@@ -57,7 +58,7 @@ def load_file() -> list[str] | None:
 def parse_file_lines(lines: list[str]) -> list[list[float]]:
     return [[float(num.replace(',', '.'))
              for num in line.split('\t')]
-             for i, line in enumerate(lines) if i % 2 == 0]
+            for i, line in enumerate(lines) if i % 2 == 0]
 
 
 def load_file_voltage() -> None:
@@ -91,10 +92,11 @@ def load_file_instant_power() -> None:
         update_graph_list(ComboboxSelection.INSTANT_POWER)
 
 
-def calculate_instant_power(voltage_numbers: list[list[float]], current_numbers: list[list[float]]) -> list[list[float]]:
+def calculate_instant_power(voltage_numbers: list[list[float]], current_numbers: list[list[float]]) -> list[
+    list[float]]:
     return [[voltage * current
              for voltage, current in zip(voltage_data, current_data)]
-             for voltage_data, current_data in zip(voltage_numbers, current_numbers)]
+            for voltage_data, current_data in zip(voltage_numbers, current_numbers)]
 
 
 def clear_select() -> None:
@@ -108,7 +110,7 @@ def update_graph_list(combobox_selection: int) -> None:
 
     length = len(NUMBERS[combobox_selection])
 
-    tree.delete(*tree.get_children()) 
+    tree.delete(*tree.get_children())
     for i in range(length):
         tree.insert("", tk.END, text=f"График {LABELS[combobox_selection]}({i + 1})")
 
@@ -122,13 +124,13 @@ def plot_data(data: list[int]) -> list[Line2D]:
     if len(data) <= 0:
         line_objects = []
     else:
-        time_seconds = [i / 20 / 80 for i in range(80)] # из задания длина всегда 80
+        time_seconds = [i / 10 / 80 for i in range(80)]  # из задания длина всегда 80
         line_objects = [plt.plot(time_seconds, NUMBERS[combobox.current()][i],
                                  label=f"{LABELS[combobox.current()]}({i + 1})")[0]
                         for i in data]
 
         plt.legend(fontsize="x-large")
-    
+
     set_plot()
     canvas.draw()
     return line_objects
@@ -142,7 +144,7 @@ def combobox_on_select(_) -> None:
 def tree_on_select(_) -> None:
     if len(tree.selection()) <= 0:
         return
-    
+
     global selected_items
     for item in tree.selection():
         item_text = tree.item(item, "text")
@@ -169,7 +171,7 @@ def update_cells_colors(line_objects: list[Line2D]) -> None:
 def set_plot():
     plt.grid(True)
     plt.xlabel("Время, сек")
-    plt.xlim((0, 1 / 20))
+    plt.xlim((0, 1 / 10))
     plt.ylabel(LABELS[combobox.current()])
 
 
@@ -187,7 +189,7 @@ for i, command in {
     load_button = tk.Button(button_frame, command=command, text=f"+ {TITLES[i]} ({LABELS[i]})")
     load_button.pack(side=tk.LEFT, padx=5)
 
-combobox = ttk.Combobox(root, state="readonly", values=[f"{TITLES[i]} ({LABELS[i]})" for i in ComboboxSelection.all]) 
+combobox = ttk.Combobox(root, state="readonly", values=[f"{TITLES[i]} ({LABELS[i]})" for i in ComboboxSelection.all])
 combobox.current(ComboboxSelection.VOLTAGE)
 combobox.pack()
 combobox.bind("<<ComboboxSelected>>", combobox_on_select)
