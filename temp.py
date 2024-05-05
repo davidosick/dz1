@@ -5,32 +5,37 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+from itertools import accumulate
 
 class ComboboxSelection:
     VOLTAGE = 0
     CURRENT = 1
     INSTANT_POWER = 2
+    POWER = 3
 
-    all = [0, 1, 2]
+    all = [0, 1, 2, 3]
 
 
 TITLES: dict[int, str] = {
     ComboboxSelection.VOLTAGE: "Напряжение",
     ComboboxSelection.CURRENT: "Сила тока",
-    ComboboxSelection.INSTANT_POWER: "Мгновенная мощность"
+    ComboboxSelection.INSTANT_POWER: "Мгновенная мощность",
+    ComboboxSelection.POWER: "Мощность"
 }
 
 LABELS: dict[int, str] = {
     ComboboxSelection.VOLTAGE: "U",
     ComboboxSelection.CURRENT: "I",
-    ComboboxSelection.INSTANT_POWER: "p"
+    ComboboxSelection.INSTANT_POWER: "p",
+    ComboboxSelection.POWER: "P"
 }
 
 global NUMBERS
 NUMBERS: dict[int, list[list[float]]] = {
     ComboboxSelection.VOLTAGE: [],
     ComboboxSelection.CURRENT: [],
-    ComboboxSelection.INSTANT_POWER: []
+    ComboboxSelection.INSTANT_POWER: [],
+    ComboboxSelection.POWER: []
 }
 
 global experiment_time
@@ -41,6 +46,9 @@ selected_items: list[int]
 
 
 def time_format(full_seconds: float) -> str:
+    if full_seconds == 0:
+        return "нет"
+
     full_minutes = int(full_seconds // 60)
     full_hours = int(full_minutes // 60)
 
@@ -67,7 +75,7 @@ def load_file_voltage() -> None:
         NUMBERS[ComboboxSelection.VOLTAGE] = parse_file_lines(data)
 
         combobox.current(ComboboxSelection.VOLTAGE)
-        update_graph_list(ComboboxSelection.VOLTAGE)
+        clear_select()
 
 
 def load_file_current() -> None:
@@ -76,7 +84,7 @@ def load_file_current() -> None:
         NUMBERS[ComboboxSelection.CURRENT] = parse_file_lines(data)
 
         combobox.current(ComboboxSelection.CURRENT)
-        update_graph_list(ComboboxSelection.CURRENT)
+        clear_select()
 
 
 def load_file_instant_power() -> None:
@@ -89,30 +97,49 @@ def load_file_instant_power() -> None:
         NUMBERS[ComboboxSelection.INSTANT_POWER] = calculate_instant_power(voltage_numbers, current_numbers)
 
         combobox.current(ComboboxSelection.INSTANT_POWER)
-        update_graph_list(ComboboxSelection.INSTANT_POWER)
+        clear_select()
 
 
-def calculate_instant_power(voltage_numbers: list[list[float]], current_numbers: list[list[float]]) -> list[
-    list[float]]:
+def calculate_instant_power(voltage_numbers: list[list[float]], 
+                            current_numbers: list[list[float]]) -> list[list[float]]:
     return [[voltage * current
              for voltage, current in zip(voltage_data, current_data)]
             for voltage_data, current_data in zip(voltage_numbers, current_numbers)]
 
+def load_file_power() -> None:
+    global NUMBERS
+    voltage_numbers = NUMBERS[ComboboxSelection.VOLTAGE]
+    current_numbers = NUMBERS[ComboboxSelection.CURRENT]
+    if len(current_numbers) <= 0 or len(voltage_numbers) <= 0:
+        messagebox.showerror("Ошибка", "Вы не загрузили значения напряжения или силы тока")
+    else:
+        NUMBERS[ComboboxSelection.INSTANT_POWER] = calculate_instant_power(voltage_numbers, current_numbers)
+        NUMBERS[ComboboxSelection.POWER] = calculate_power(NUMBERS[ComboboxSelection.INSTANT_POWER])
+
+        combobox.current(ComboboxSelection.POWER)
+        clear_select()
+
+
+def calculate_power(instant_power_numbers: list[list[float]]) -> list[list[float]]:
+    return [[instant_power / ((i + 1) / 10 / 80)
+             for i, instant_power in enumerate(accumulate(instant_power_data))]
+            for instant_power_data in instant_power_numbers]
+        
 
 def clear_select() -> None:
-    update_graph_list(combobox.current())  # <- мы и так очищаем selected_items тут внутри
+    update_graph_list()  # <- мы и так очищаем selected_items тут внутри
     plot_data(selected_items)  # просто чистим холст
 
 
-def update_graph_list(combobox_selection: int) -> None:
+def update_graph_list() -> None:
     global selected_items, experiment_time
     selected_items = []
 
-    length = len(NUMBERS[combobox_selection])
+    length = len(NUMBERS[combobox.current()])
 
     tree.delete(*tree.get_children())
     for i in range(length):
-        tree.insert("", tk.END, text=f"График {LABELS[combobox_selection]}({i + 1})")
+        tree.insert("", tk.END, text=f"График {LABELS[combobox.current()]}({i + 1})")
 
     experiment_time = length / 10
     time_label.configure(text=f"Время: {time_format(experiment_time)}")
@@ -137,8 +164,7 @@ def plot_data(data: list[int]) -> list[Line2D]:
 
 
 def combobox_on_select(_) -> None:
-    update_graph_list(combobox.current())
-    plot_data(selected_items)  # просто чистим холст
+    clear_select()
 
 
 def tree_on_select(_) -> None:
@@ -160,7 +186,6 @@ def tree_on_select(_) -> None:
 
 
 def update_cells_colors(line_objects: list[Line2D]) -> None:
-    global selected_items
     for index, (item, line_object) in enumerate(zip(selected_items, line_objects)):
         tree.tag_configure(f'mytag_{index}',
                            background=str(line_object.get_color()),
@@ -184,7 +209,8 @@ button_frame.pack(side=tk.TOP)
 for i, command in {
     ComboboxSelection.VOLTAGE: load_file_voltage,
     ComboboxSelection.CURRENT: load_file_current,
-    ComboboxSelection.INSTANT_POWER: load_file_instant_power
+    ComboboxSelection.INSTANT_POWER: load_file_instant_power,
+    ComboboxSelection.POWER: load_file_power
 }.items():
     load_button = tk.Button(button_frame, command=command, text=f"+ {TITLES[i]} ({LABELS[i]})")
     load_button.pack(side=tk.LEFT, padx=5)
@@ -210,12 +236,12 @@ scrollbar.pack(side=tk.LEFT, fill=tk.Y, anchor=tk.W)
 tree.configure(yscrollcommand=scrollbar.set)
 tree.bind("<<TreeviewSelect>>", tree_on_select)
 
-fig, ax = plt.subplots()
+fig = plt.figure()
 set_plot()
 canvas = FigureCanvasTkAgg(fig, master=root)
 canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=tk.TRUE)
 
-time_label = ttk.Label(root, text=f"Время:")
+time_label = ttk.Label(root, text=f"Время: {time_format(0)}")
 time_label.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=tk.TRUE)
 
 root.mainloop()
