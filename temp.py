@@ -378,7 +378,7 @@ slider_canvas = FigureCanvasTkAgg(slider_fig, master=root)
 slider_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=tk.TRUE)
 
 #time label
-time_label = ttk.Label(root, text=f"Время: {time_format(0)}")
+time_label = ttk.Label(root, text=f"Продолжительность эксперимента: {time_format(0)}")
 time_label.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.TRUE)
 
 # starting our frame application
