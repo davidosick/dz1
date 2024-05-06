@@ -227,7 +227,7 @@ def update_graph_list() -> None:
 # + data formatting
 def update_time() -> None:
     experiment_time = len(NUMBERS[combobox.current()]) / 10
-    time_label.configure(text=f"Время: {time_format(experiment_time)}")
+    time_label.configure(text=f"Продолжительность эксперимента: {time_format(experiment_time)}")
 
 
 # clear the canvas and draw new element(s)
