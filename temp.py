@@ -3,6 +3,7 @@ from tkinter import ttk, filedialog, messagebox
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.widgets import Slider
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from itertools import accumulate
@@ -190,8 +191,8 @@ def load_file_full_power() -> None:
 def calculate_full_power(voltage_numbers: list[list[float]],
                          current_numbers: list[list[float]]) -> list[list[float]]:
     return [[voltage * current / ((i + 1) / 10 / 80)**2
-             for i, (voltage, current) in enumerate(accumulate(map(lambda a: (a[0]**2, a[1]**2), 
-                                                                   zip(voltage_data, current_data)), 
+             for i, (voltage, current) in enumerate(accumulate(map(lambda a, b: (a**2, b**2), 
+                                                                   voltage_data, current_data), 
                                                                lambda a, b: (a[0] + b[0], a[1] + b[1])))]
             for voltage_data, current_data in zip(voltage_numbers, current_numbers)]
 
@@ -232,20 +233,20 @@ def update_time() -> None:
 # clear the canvas and draw new element(s)
 def plot_data(data: list[int]) -> list[Line2D]:
     # removes the figure
-    plt.clf()
+    graph_fig.clear()
+    graph_fig.add_axes((0.2, 0.2, 0.6, 0.6))
 
     if len(data) <= 0:
         line_objects = []
     else:
         time_seconds = [i / 10 / 80 for i in range(80)]  # length of the row is always 80
-        line_objects = [plt.plot(time_seconds, NUMBERS[combobox.current()][i],
+        line_objects = [graph_fig.axes[0].plot(time_seconds, NUMBERS[combobox.current()][i],
                                  label=f"{LABELS[combobox.current()]}({i + 1})")[0]
                         for i in data]
 
-        plt.legend(fontsize="x-large")
+        graph_fig.legend(fontsize="x-large")
 
-    set_plot()
-    canvas.draw()
+    update_plot_info()
     return line_objects
 
 
@@ -283,11 +284,16 @@ def update_cells_colors(line_objects: list[Line2D]) -> None:
         tree.item(tree.get_children()[item], tags=(f'mytag_{index}',))
 
 
-def set_plot():
-    plt.grid(True)
-    plt.xlabel("Время, сек")
-    plt.xlim((0, 1 / 10))
-    plt.ylabel(LABELS[combobox.current()])
+def update_plot_info():
+    graph_fig.axes[0].grid(True)
+    graph_fig.axes[0].set_xlabel("Время, сек")
+    graph_fig.axes[0].set_ylabel(LABELS[combobox.current()])
+    graph_fig.axes[0].set_xlim((slider_min.val, slider_max.val))
+    graph_canvas.draw()
+
+
+def sliders_on_change(_: float) -> None:
+    update_plot_info()
 
 
 #crating main window
@@ -296,7 +302,7 @@ root = tk.Tk()
 root.title("ДЗ1 by ТыШаКаТя")
 
 #put the frame for buttons inside parent's top-level widget
-button_frame = tk.Frame(root)
+button_frame = ttk.Frame(root)
 button_frame.pack(side=tk.TOP)
 
 #creating buttons for each operation
@@ -308,7 +314,7 @@ for i, command in {
     ComboboxSelection.REACTIVE_POWER: load_file_reactive_power,
     ComboboxSelection.FULL_POWER: load_file_full_power
 }.items():
-    load_button = tk.Button(button_frame, command=command, text=f"+ {TITLES[i]} ({LABELS[i]})")
+    load_button = ttk.Button(button_frame, command=command, text=f"+ {TITLES[i]} ({LABELS[i]})")
     load_button.pack(side=tk.LEFT, padx=5)
 
 #Combobox is a widget that combines a text field
@@ -321,11 +327,11 @@ combobox.pack()
 combobox.bind("<<ComboboxSelected>>", combobox_on_select)
 
 #
-tree_frame = tk.Frame(root)
+tree_frame = ttk.Frame(root)
 tree_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=tk.TRUE)
 
 #creation of button for clearing the scene and selected chart lines to display
-clear_button = tk.Button(tree_frame, text="Очистить выбор", command=clear_on_select)
+clear_button = ttk.Button(tree_frame, text="Очистить выбор", command=clear_on_select)
 clear_button.pack(side=tk.TOP)
 
 #creation of list of views for every line that chart can be displayed
@@ -343,18 +349,37 @@ tree.bind("<<TreeviewSelect>>", tree_on_select)
 ###paint bars using matplotlib dependency
 
 #create a figure
-fig = plt.figure()
-
-#clear the plot and set appropriate labels to axes, etc
-set_plot()
+graph_fig = plt.figure()
+graph_fig.add_axes((0.2, 0.2, 0.6, 0.6))
 
 #canvas that is used to be painted on
-canvas = FigureCanvasTkAgg(fig, master=root)
-canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=tk.TRUE)
+graph_canvas = FigureCanvasTkAgg(graph_fig, master=root)
+graph_fig.axes[0].grid(True)
+graph_fig.axes[0].set_xlabel("Время, сек")
+graph_fig.axes[0].set_ylabel(LABELS[combobox.current()])
+graph_fig.axes[0].set_xlim((0, 1/10))
+graph_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=tk.TRUE)
+
+# sets up sliders for graph
+slider_fig = plt.figure(figsize=(6.4, 0.48))
+slider_fig.add_axes((0.2, 0.5, 0.6, 0.3))
+slider_fig.add_axes((0.2, 0.2, 0.6, 0.3))
+slider_min = Slider(slider_fig.axes[0], "", 0, 1/10, 
+                    valinit=0, valstep=1/20/10, 
+                    initcolor="none", closedmax=False)
+slider_max = Slider(slider_fig.axes[1], "", 0, 1/10, 
+                    valinit=1/10, valstep=1/20/10, 
+                    initcolor="none", closedmin=False)
+slider_min.slidermax = slider_max
+slider_max.slidermin = slider_min
+slider_min.on_changed(sliders_on_change)
+slider_max.on_changed(sliders_on_change)
+slider_canvas = FigureCanvasTkAgg(slider_fig, master=root)
+slider_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=tk.TRUE)
 
 #time label
 time_label = ttk.Label(root, text=f"Время: {time_format(0)}")
-time_label.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=tk.TRUE)
+time_label.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.TRUE)
 
 # starting our frame application
 root.mainloop()
