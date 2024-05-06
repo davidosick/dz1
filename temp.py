@@ -6,6 +6,7 @@ from matplotlib.lines import Line2D
 from matplotlib.widgets import Slider
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+import os
 from itertools import accumulate
 
 class ComboboxSelection:
@@ -86,7 +87,6 @@ def parse_file_lines(lines: list[str]) -> list[list[float]]:
             for i, line in enumerate(lines) if i % 2 == 0]
 
 
-
 def load_file_voltage() -> None:
     global NUMBERS
     if data := load_file():
@@ -117,6 +117,8 @@ def load_file_instant_power() -> None:
 
         combobox.current(ComboboxSelection.INSTANT_POWER)
         clear_scene()
+        
+        dump_to_file()
 
 
 # calculates instant power elements by multiplication of voltage and current
@@ -144,6 +146,8 @@ def load_file_active_power() -> None:
 
         combobox.current(ComboboxSelection.ACTIVE_POWER)
         clear_scene()
+        
+        dump_to_file()
 
 
 def calculate_active_power(instant_power_numbers: list[list[float]]) -> list[list[float]]:
@@ -166,6 +170,8 @@ def load_file_reactive_power() -> None:
 
         combobox.current(ComboboxSelection.REACTIVE_POWER)
         clear_scene()
+        
+        dump_to_file()
 
 
 def calculate_reactive_power(active_power_numbers: list[list[float]],
@@ -186,6 +192,8 @@ def load_file_full_power() -> None:
 
         combobox.current(ComboboxSelection.FULL_POWER)
         clear_scene()
+        
+        dump_to_file()
     
 
 def calculate_full_power(voltage_numbers: list[list[float]],
@@ -195,6 +203,19 @@ def calculate_full_power(voltage_numbers: list[list[float]],
                                                                    voltage_data, current_data), 
                                                                lambda a, b: (a[0] + b[0], a[1] + b[1])))]
             for voltage_data, current_data in zip(voltage_numbers, current_numbers)]
+
+
+def dump_to_file() -> None:
+    numbers = NUMBERS[combobox.current()]
+    filename = f"./output/{LABELS[combobox.current()]}_{combobox.current()}.txt"
+
+    if not os.path.exists("./output/"):
+        os.mkdir("./output/")
+
+
+    with open(filename, "w") as f:
+        for numbers_data in numbers:
+            f.write(f"{"\t".join([str(number).replace(".", ",") for number in numbers_data])}\n")
 
 
 # draw new thing on canvas, consists of 2 steps
