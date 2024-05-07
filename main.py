@@ -97,7 +97,7 @@ class Spectrum:
         if len(self.selected_lines) > 0:
             line_objects = [
                 self.fig_spectrum.axes[0].stem(
-                    numpy.arange(len(spectrum.all_values[i])), 
+                    [800 * j / 64 for j in range(64)], 
                     numpy.abs(spectrum.all_values[i]),
                     label=f"|FI|({i + 1})",
                     linefmt=f'C{index}', markerfmt=f'o', basefmt=f'C{index}').baseline
@@ -142,7 +142,7 @@ class Spectrum:
         self.fig_spectrum.axes[0].grid(True)
         self.fig_spectrum.axes[0].set_xlabel("Частота, Гц")
         self.fig_spectrum.axes[0].set_ylabel("Амплитуда")
-        self.fig_spectrum.axes[0].set_xlim((0,32))
+        self.fig_spectrum.axes[0].set_xlim((0, 400))
     
     def clear_scene(self):
         self.update_chart_list()
