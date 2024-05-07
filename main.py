@@ -21,7 +21,6 @@ class Spectrum:
     scrollbar_spectrum : ttk.Scrollbar
     canvas_spectrum : FigureCanvasTkAgg
     fig_spectrum : Figure
-    all_x_values : list[list[float]]
     all_values : list[list[float]]
     selected_lines : list[int]
     current_numbers : list[list[float]]
@@ -81,11 +80,6 @@ class Spectrum:
         return [[current_elem
                  for current_elem in numpy.fft.fft(current_line_data, 64)]
                 for current_line_data in self.current_numbers]
-    
-    # def get_list_of_spectrum_elements_x(self):
-    #     return [[current_elem
-    #              for i, current_elem in scipy.fft(current_line_data)]
-    #             for current_line_data in self.current_numbers]
     
     def update_chart_list(self) -> None:
         self.selected_lines = []
