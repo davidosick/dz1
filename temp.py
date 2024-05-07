@@ -1,11 +1,143 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
+import numpy
+
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from matplotlib.widgets import Slider
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+import os
 from itertools import accumulate
+
+class Spectrum:
+    additional_window : tk.Tk
+    graph_frame : ttk.Frame
+    lines_frame : ttk.Frame
+    cls_button : ttk.Button
+    tree_lines : ttk.Treeview
+    scrollbar_spectrum : ttk.Scrollbar
+    canvas_spectrum : FigureCanvasTkAgg
+    fig_spectrum : Figure
+    all_x_values : list[list[float]]
+    all_values : list[list[float]]
+    selected_lines : list[int]
+    current_numbers : list[list[float]]
+
+    def prepare_to_create(self) -> None:
+        if len(NUMBERS[ComboboxSelection.CURRENT]) <= 0:
+            messagebox.showerror("Ошибка", "Вы не загрузили значение силы тока")
+        else:
+            self.create_additional_window()
+
+    def create_additional_window(self) -> None:
+        self.additional_window = tk.Tk()
+        self.additional_window.title("График спектра сигнала")
+        # self.additional_window.geometry("800x500")
+
+        self.graph_frame = ttk.Frame(self.additional_window)
+        self.graph_frame.pack(anchor=tk.CENTER, fill=tk.BOTH, expand=tk.TRUE)
+
+        # frame for list of lines
+        self.lines_frame = ttk.Frame(self.additional_window)
+        self.lines_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=tk.TRUE)
+
+        # creation of button for clearing the scene and selected chart lines to display
+        self.cls_button = ttk.Button(self.lines_frame, text="Очистить выбор", command=self.clear_list_on_select)
+        self.cls_button.pack(side=tk.TOP)
+
+        # creation of list of views for every line that chart can be displayed
+        self.tree_lines = ttk.Treeview(self.lines_frame, selectmode=tk.EXTENDED)
+        self.tree_lines.heading("#0", text="Выбор графиков:")
+        self.tree_lines.pack(side=tk.RIGHT, fill=tk.BOTH, expand=tk.TRUE)
+
+        # creation of scrollbar
+        self.scrollbar_spectrum = ttk.Scrollbar(self.lines_frame, orient=tk.VERTICAL, command=self.tree_lines.yview)
+        self.scrollbar_spectrum.pack(side=tk.LEFT, fill=tk.Y, anchor=tk.W)
+
+        self.tree_lines.configure(yscrollcommand=self.scrollbar_spectrum.set)
+        self.tree_lines.bind("<<TreeviewSelect>>", self.tree_lines_on_select)
+
+        self.fig_spectrum = plt.figure()
+        self.fig_spectrum.add_axes((0.2, 0.2, 0.6, 0.6))
+        self.set_plot_spectrum()
+
+        self.canvas_spectrum = FigureCanvasTkAgg(self.fig_spectrum, master=self.additional_window)
+        self.canvas_spectrum.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=tk.TRUE)
+        self.get_values()
+        self.plot_data_spectrum()
+
+    def get_values(self):
+        self.current_numbers = NUMBERS[ComboboxSelection.CURRENT]
+        if len(self.current_numbers) <= 0:
+            messagebox.showerror("Ошибка", "Вы не загрузили значение силы тока")
+        else:
+            self.all_values = self.get_list_of_spectrum_elements()
+            self.clear_scene()
+
+    def get_list_of_spectrum_elements(self) -> list[list[float]]:
+        return [[current_elem
+                 for current_elem in numpy.fft.fft(current_line_data, 64)]
+                for current_line_data in self.current_numbers]
+    
+    # def get_list_of_spectrum_elements_x(self):
+    #     return [[current_elem
+    #              for i, current_elem in scipy.fft(current_line_data)]
+    #             for current_line_data in self.current_numbers]
+    
+    def update_chart_list(self) -> None:
+        self.selected_lines = []
+
+        self.tree_lines.delete(*self.tree_lines.get_children())
+        for i in range(len(self.all_values)):
+            self.tree_lines.insert("", tk.END, text=f"График спектра ({i + 1})")
+
+    def plot_data_spectrum(self):
+        # removes the figure
+        self.fig_spectrum.clear()
+        self.fig_spectrum.add_axes((0.2, 0.2, 0.6, 0.6))
+        
+        if len(self.selected_lines) > 0:
+            for i in self.selected_lines:
+                self.fig_spectrum.axes[0].stem(
+                    numpy.arange(len(spectrum.all_values[i])), 
+                    numpy.abs(spectrum.all_values[i]),
+                    label=f"{LABELS[combobox.current()]}({i + 1})")
+            self.fig_spectrum.legend()
+        
+        self.set_plot_spectrum()
+        self.canvas_spectrum.draw()
+    
+    def clear_list_on_select(self):
+        self.clear_scene()
+    
+    def tree_lines_on_select(self, _) -> None:
+        if len(self.tree_lines.selection()) <= 0:
+            return
+
+        for item in self.tree_lines.selection():
+            item_text = self.tree_lines.item(item, "text")
+            if (sel_now := self.tree_lines.index(item)) not in self.selected_lines:
+                self.selected_lines.append(sel_now)
+                self.tree_lines.item(item, text=f"+ {item_text}")
+            else:
+                self.selected_lines.remove(sel_now)
+                self.tree_lines.item(item, text=item_text[2:], tags="")
+            self.tree_lines.selection_remove(item)
+
+        self.plot_data_spectrum()
+
+    def set_plot_spectrum(self):
+        self.fig_spectrum.axes[0].grid(True)
+        self.fig_spectrum.axes[0].set_xlabel("Частота, Гц")
+        self.fig_spectrum.axes[0].set_ylabel("Амплитуда")
+        self.fig_spectrum.axes[0].set_xlim((-5,32))
+    
+    def clear_scene(self):
+        self.update_chart_list()
+        self.plot_data_spectrum()
 
 class ComboboxSelection:
     VOLTAGE = 0
@@ -85,7 +217,6 @@ def parse_file_lines(lines: list[str]) -> list[list[float]]:
             for i, line in enumerate(lines) if i % 2 == 0]
 
 
-
 def load_file_voltage() -> None:
     global NUMBERS
     if data := load_file():
@@ -117,6 +248,8 @@ def load_file_instant_power() -> None:
         combobox.current(ComboboxSelection.INSTANT_POWER)
         clear_scene()
 
+        dump_to_file()
+
 
 # calculates instant power elements by multiplication of voltage and current
 # getting 2 lists -> one list of multiplication numbers
@@ -134,15 +267,13 @@ def load_file_active_power() -> None:
     if len(current_numbers) <= 0 or len(voltage_numbers) <= 0:
         messagebox.showerror("Ошибка", "Вы не загрузили значения напряжения или силы тока")
     else:
-        #if len(NUMBERS[ComboboxSelection.INSTANT_POWER]) <= 0
-        # NUMBERS[ComboboxSelection.INSTANT_POWER] = calculate_instant_power(voltage_numbers, current_numbers)
-        #else
-        # @delete underlying line@#
         NUMBERS[ComboboxSelection.INSTANT_POWER] = calculate_instant_power(voltage_numbers, current_numbers)
         NUMBERS[ComboboxSelection.ACTIVE_POWER] = calculate_active_power(NUMBERS[ComboboxSelection.INSTANT_POWER])
 
         combobox.current(ComboboxSelection.ACTIVE_POWER)
         clear_scene()
+
+        dump_to_file()
 
 
 def calculate_active_power(instant_power_numbers: list[list[float]]) -> list[list[float]]:
@@ -166,6 +297,8 @@ def load_file_reactive_power() -> None:
         combobox.current(ComboboxSelection.REACTIVE_POWER)
         clear_scene()
 
+        dump_to_file()
+
 
 def calculate_reactive_power(active_power_numbers: list[list[float]],
                              full_power_numbers: list[list[float]]) -> list[list[float]]:
@@ -185,15 +318,30 @@ def load_file_full_power() -> None:
 
         combobox.current(ComboboxSelection.FULL_POWER)
         clear_scene()
-    
+
+        dump_to_file()
+
 
 def calculate_full_power(voltage_numbers: list[list[float]],
                          current_numbers: list[list[float]]) -> list[list[float]]:
     return [[voltage * current / ((i + 1) / 10 / 80)**2
-             for i, (voltage, current) in enumerate(accumulate(map(lambda a: (a[0]**2, a[1]**2), 
-                                                                   zip(voltage_data, current_data)), 
+             for i, (voltage, current) in enumerate(accumulate(map(lambda a, b: (a**2, b**2),
+                                                                   voltage_data, current_data),
                                                                lambda a, b: (a[0] + b[0], a[1] + b[1])))]
             for voltage_data, current_data in zip(voltage_numbers, current_numbers)]
+
+
+def dump_to_file() -> None:
+    numbers = NUMBERS[combobox.current()]
+    filename = f"./output/{LABELS[combobox.current()]}_{combobox.current()}.txt"
+
+    if not os.path.exists("./output/"):
+        os.mkdir("./output/")
+
+
+    with open(filename, "w") as f:
+        for numbers_data in numbers:
+            f.write(f"{"\t".join([str(number).replace(".", ",") for number in numbers_data])}\n")
 
 
 # draw new thing on canvas, consists of 2 steps
@@ -215,7 +363,6 @@ def update_graph_list() -> None:
     global selected_items, experiment_time
     selected_items = []
 
-
     tree.delete(*tree.get_children())
     for i in range(len(NUMBERS[combobox.current()])):
         tree.insert("", tk.END, text=f"График {LABELS[combobox.current()]}({i + 1})")
@@ -226,26 +373,26 @@ def update_graph_list() -> None:
 # + data formatting
 def update_time() -> None:
     experiment_time = len(NUMBERS[combobox.current()]) / 10
-    time_label.configure(text=f"Время: {time_format(experiment_time)}")
+    time_label.configure(text=f"Продолжительность эксперимента: {time_format(experiment_time)}")
 
 
 # clear the canvas and draw new element(s)
 def plot_data(data: list[int]) -> list[Line2D]:
     # removes the figure
-    plt.clf()
+    graph_fig.clear()
+    graph_fig.add_axes((0.2, 0.2, 0.6, 0.6))
 
     if len(data) <= 0:
         line_objects = []
     else:
         time_seconds = [i / 10 / 80 for i in range(80)]  # length of the row is always 80
-        line_objects = [plt.plot(time_seconds, NUMBERS[combobox.current()][i],
+        line_objects = [graph_fig.axes[0].plot(time_seconds, NUMBERS[combobox.current()][i],
                                  label=f"{LABELS[combobox.current()]}({i + 1})")[0]
                         for i in data]
 
-        plt.legend(fontsize="x-large")
+        graph_fig.legend(fontsize="x-large")
 
-    set_plot()
-    canvas.draw()
+    update_plot_info()
     return line_objects
 
 
@@ -283,20 +430,25 @@ def update_cells_colors(line_objects: list[Line2D]) -> None:
         tree.item(tree.get_children()[item], tags=(f'mytag_{index}',))
 
 
-def set_plot():
-    plt.grid(True)
-    plt.xlabel("Время, сек")
-    plt.xlim((0, 1 / 10))
-    plt.ylabel(LABELS[combobox.current()])
+def update_plot_info():
+    graph_fig.axes[0].grid(True)
+    graph_fig.axes[0].set_xlabel("Время, сек")
+    graph_fig.axes[0].set_ylabel(LABELS[combobox.current()])
+    graph_fig.axes[0].set_xlim((slider_min.val, slider_max.val))
+    graph_canvas.draw()
 
 
-#crating main window
+def sliders_on_change(_: float) -> None:
+    update_plot_info()
+
+
+#creating main window
 #root is a reference to manipulate main frame
 root = tk.Tk()
 root.title("ДЗ1 by ТыШаКаТя")
 
 #put the frame for buttons inside parent's top-level widget
-button_frame = tk.Frame(root)
+button_frame = ttk.Frame(root)
 button_frame.pack(side=tk.TOP)
 
 #creating buttons for each operation
@@ -308,8 +460,13 @@ for i, command in {
     ComboboxSelection.REACTIVE_POWER: load_file_reactive_power,
     ComboboxSelection.FULL_POWER: load_file_full_power
 }.items():
-    load_button = tk.Button(button_frame, command=command, text=f"+ {TITLES[i]} ({LABELS[i]})")
+    load_button = ttk.Button(button_frame, command=command, text=f"+ {TITLES[i]} ({LABELS[i]})")
     load_button.pack(side=tk.LEFT, padx=5)
+
+spectrum = Spectrum()
+# spectrumm button, opens new window
+spectrumButton = tk.Button(root, text="Получить спектр", command=spectrum.prepare_to_create)
+spectrumButton.pack()
 
 #Combobox is a widget that combines a text field
 # with a pop-down list of values
@@ -321,11 +478,11 @@ combobox.pack()
 combobox.bind("<<ComboboxSelected>>", combobox_on_select)
 
 #
-tree_frame = tk.Frame(root)
+tree_frame = ttk.Frame(root)
 tree_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=tk.TRUE)
 
 #creation of button for clearing the scene and selected chart lines to display
-clear_button = tk.Button(tree_frame, text="Очистить выбор", command=clear_on_select)
+clear_button = ttk.Button(tree_frame, text="Очистить выбор", command=clear_on_select)
 clear_button.pack(side=tk.TOP)
 
 #creation of list of views for every line that chart can be displayed
@@ -343,18 +500,37 @@ tree.bind("<<TreeviewSelect>>", tree_on_select)
 ###paint bars using matplotlib dependency
 
 #create a figure
-fig = plt.figure()
-
-#clear the plot and set appropriate labels to axes, etc
-set_plot()
+graph_fig = plt.figure()
+graph_fig.add_axes((0.2, 0.2, 0.6, 0.6))
 
 #canvas that is used to be painted on
-canvas = FigureCanvasTkAgg(fig, master=root)
-canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=tk.TRUE)
+graph_canvas = FigureCanvasTkAgg(graph_fig, master=root)
+graph_fig.axes[0].grid(True)
+graph_fig.axes[0].set_xlabel("Время, сек")
+graph_fig.axes[0].set_ylabel(LABELS[combobox.current()])
+graph_fig.axes[0].set_xlim((0, 1/10))
+graph_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=tk.TRUE)
+
+# sets up sliders for graph
+slider_fig = plt.figure(figsize=(6.4, 0.48))
+slider_fig.add_axes((0.2, 0.5, 0.6, 0.3))
+slider_fig.add_axes((0.2, 0.2, 0.6, 0.3))
+slider_min = Slider(slider_fig.axes[0], "", 0, 1/10,
+                    valinit=0, valstep=1/20/10,
+                    initcolor="none", closedmax=False)
+slider_max = Slider(slider_fig.axes[1], "", 0, 1/10,
+                    valinit=1/10, valstep=1/20/10,
+                    initcolor="none", closedmin=False)
+slider_min.slidermax = slider_max
+slider_max.slidermin = slider_min
+slider_min.on_changed(sliders_on_change)
+slider_max.on_changed(sliders_on_change)
+slider_canvas = FigureCanvasTkAgg(slider_fig, master=root)
+slider_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=tk.TRUE)
 
 #time label
-time_label = ttk.Label(root, text=f"Время: {time_format(0)}")
-time_label.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=tk.TRUE)
+time_label = ttk.Label(root, text=f"Продолжительность эксперимента: {time_format(0)}")
+time_label.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.TRUE)
 
 # starting our frame application
 root.mainloop()
