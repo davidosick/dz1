@@ -98,7 +98,8 @@ class Spectrum:
                 self.fig_spectrum.axes[0].stem(
                     numpy.arange(len(spectrum.all_values[i])), 
                     numpy.abs(spectrum.all_values[i]),
-                    label=f"{LABELS[combobox.current()]}({i + 1})")
+                    label=f"{LABELS[combobox.current()]}({i + 1})",
+                    linefmt=f'C{i}', markerfmt=f'o', basefmt=f'C{i}')
             self.fig_spectrum.legend()
         
         self.set_plot_spectrum()
