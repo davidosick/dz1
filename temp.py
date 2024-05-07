@@ -91,8 +91,6 @@ class Spectrum:
 
         plt.stem(numpy.arange(len(spectrum.all_values[0])), numpy.abs(spectrum.all_values[0]))
 
-
-        set_plot_spectrum()
         self.canvas_spectrum.draw()
     def clear_scene(self):
         self.update_chart_list()
@@ -393,23 +391,6 @@ def tree_lines_on_select() -> None:
         spectrum.tree_lines.selection_remove(item)
 
     update_cells_colors(plot_data(spectrum.selected_lines))
-def plot_spectrum(data: list[int]) -> list[Line2D]:
-    # removes the figure
-    plt.clf()
-
-    if len(data) <= 0:
-        line_objects = []
-    else:
-        time_seconds = [i / 10 / 80 for i in range(80)]  # length of the row is always 80
-        line_objects = [plt.plot(time_seconds, NUMBERS[combobox.current()][i],
-                                 label=f"{LABELS[combobox.current()]}({i + 1})")[0]
-                        for i in data]
-
-        plt.legend(fontsize="x-large")
-
-    set_plot()
-    canvas.draw()
-    return line_objects
 
 def set_plot_spectrum():
     plt.grid(True)
