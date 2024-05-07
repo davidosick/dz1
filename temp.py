@@ -2,9 +2,9 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
 import numpy
-import scipy
 
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.widgets import Slider
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -13,33 +13,39 @@ import os
 from itertools import accumulate
 
 class Spectrum:
-
     additional_window : tk.Tk
-    graph_frame : tk.Frame
-    lines_frame : tk.Frame
-    cls_button : tk.Button
+    graph_frame : ttk.Frame
+    lines_frame : ttk.Frame
+    cls_button : ttk.Button
     tree_lines : ttk.Treeview
     scrollbar_spectrum : ttk.Scrollbar
     canvas_spectrum : FigureCanvasTkAgg
-    fig_spectrum : plt.Figure
+    fig_spectrum : Figure
     all_x_values : list[list[float]]
     all_values : list[list[float]]
     selected_lines : list[int]
     current_numbers : list[list[float]]
+
+    def prepare_to_create(self) -> None:
+        if len(NUMBERS[ComboboxSelection.CURRENT]) <= 0:
+            messagebox.showerror("Ошибка", "Вы не загрузили значение силы тока")
+        else:
+            self.create_additional_window()
+
     def create_additional_window(self) -> None:
         self.additional_window = tk.Tk()
         self.additional_window.title("График спектра сигнала")
-        self.additional_window.geometry("800x500")
+        # self.additional_window.geometry("800x500")
 
-        self.graph_frame = tk.Frame(self.additional_window)
+        self.graph_frame = ttk.Frame(self.additional_window)
         self.graph_frame.pack(anchor=tk.CENTER, fill=tk.BOTH, expand=tk.TRUE)
 
         # frame for list of lines
-        self.lines_frame = tk.Frame(self.additional_window)
+        self.lines_frame = ttk.Frame(self.additional_window)
         self.lines_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=tk.TRUE)
 
         # creation of button for clearing the scene and selected chart lines to display
-        self.cls_button = tk.Button(self.lines_frame, text="Очистить выбор", command=clear_list_on_select)
+        self.cls_button = ttk.Button(self.lines_frame, text="Очистить выбор", command=self.clear_list_on_select)
         self.cls_button.pack(side=tk.TOP)
 
         # creation of list of views for every line that chart can be displayed
@@ -51,11 +57,12 @@ class Spectrum:
         self.scrollbar_spectrum = ttk.Scrollbar(self.lines_frame, orient=tk.VERTICAL, command=self.tree_lines.yview)
         self.scrollbar_spectrum.pack(side=tk.LEFT, fill=tk.Y, anchor=tk.W)
 
-        self.tree_lines.configure(yscrollcommand=scrollbar.set)
-        self.tree_lines.bind("<<TreeviewSelect>>", tree_lines_on_select)
+        self.tree_lines.configure(yscrollcommand=self.scrollbar_spectrum.set)
+        self.tree_lines.bind("<<TreeviewSelect>>", self.tree_lines_on_select)
 
         self.fig_spectrum = plt.figure()
-        set_plot_spectrum()
+        self.fig_spectrum.add_axes((0.2, 0.2, 0.6, 0.6))
+        self.set_plot_spectrum()
 
         self.canvas_spectrum = FigureCanvasTkAgg(self.fig_spectrum, master=self.additional_window)
         self.canvas_spectrum.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=tk.TRUE)
@@ -69,31 +76,65 @@ class Spectrum:
         else:
             self.all_values = self.get_list_of_spectrum_elements()
             self.clear_scene()
+
     def get_list_of_spectrum_elements(self) -> list[list[float]]:
-        print([[current_elem
-                 for current_elem in numpy.fft.fft(current_line_data[:63])]
-                for current_line_data in self.current_numbers])
         return [[current_elem
-                 for current_elem in numpy.fft.fft(current_line_data[:63])]
+                 for current_elem in numpy.fft.fft(current_line_data, 64)]
                 for current_line_data in self.current_numbers]
+    
     # def get_list_of_spectrum_elements_x(self):
     #     return [[current_elem
     #              for i, current_elem in scipy.fft(current_line_data)]
     #             for current_line_data in self.current_numbers]
+    
     def update_chart_list(self) -> None:
         self.selected_lines = []
 
         self.tree_lines.delete(*self.tree_lines.get_children())
-        for i in range(80):
+        for i in range(len(self.all_values)):
             self.tree_lines.insert("", tk.END, text=f"График спектра ({i + 1})")
 
     def plot_data_spectrum(self):
         # removes the figure
-        plt.clf()
-
-        plt.stem(numpy.arange(len(spectrum.all_values[0])), numpy.abs(spectrum.all_values[0]))
-
+        self.fig_spectrum.clear()
+        self.fig_spectrum.add_axes((0.2, 0.2, 0.6, 0.6))
+        
+        if len(self.selected_lines) > 0:
+            for i in self.selected_lines:
+                self.fig_spectrum.axes[0].stem(
+                    numpy.arange(len(spectrum.all_values[i])), 
+                    numpy.abs(spectrum.all_values[i]),
+                    label=f"{LABELS[combobox.current()]}({i + 1})")
+            self.fig_spectrum.legend()
+        
+        self.set_plot_spectrum()
         self.canvas_spectrum.draw()
+    
+    def clear_list_on_select(self):
+        self.clear_scene()
+    
+    def tree_lines_on_select(self, _) -> None:
+        if len(self.tree_lines.selection()) <= 0:
+            return
+
+        for item in self.tree_lines.selection():
+            item_text = self.tree_lines.item(item, "text")
+            if (sel_now := self.tree_lines.index(item)) not in self.selected_lines:
+                self.selected_lines.append(sel_now)
+                self.tree_lines.item(item, text=f"+ {item_text}")
+            else:
+                self.selected_lines.remove(sel_now)
+                self.tree_lines.item(item, text=item_text[2:], tags="")
+            self.tree_lines.selection_remove(item)
+
+        self.plot_data_spectrum()
+
+    def set_plot_spectrum(self):
+        self.fig_spectrum.axes[0].grid(True)
+        self.fig_spectrum.axes[0].set_xlabel("Частота, Гц")
+        self.fig_spectrum.axes[0].set_ylabel("Амплитуда")
+        self.fig_spectrum.axes[0].set_xlim((-5,32))
+    
     def clear_scene(self):
         self.update_chart_list()
         self.plot_data_spectrum()
@@ -322,7 +363,6 @@ def update_graph_list() -> None:
     global selected_items, experiment_time
     selected_items = []
 
-
     tree.delete(*tree.get_children())
     for i in range(len(NUMBERS[combobox.current()])):
         tree.insert("", tk.END, text=f"График {LABELS[combobox.current()]}({i + 1})")
@@ -401,30 +441,6 @@ def update_plot_info():
 def sliders_on_change(_: float) -> None:
     update_plot_info()
 
-def clear_list_on_select():
-    spectrum.clear_scene()
-def tree_lines_on_select() -> None:
-    if len(spectrum.tree_lines.selection()) <= 0:
-        return
-
-    for item in spectrum.tree_lines.selection():
-        item_text = spectrum.tree_lines.item(item, "text")
-        if (sel_now := spectrum.tree_lines.index(item)) not in spectrum.selected_lines:
-            spectrum.selected_lines.append(sel_now)
-            spectrum.tree_lines.item(item, text=f"+ {item_text}")
-        else:
-            spectrum.selected_lines.remove(sel_now)
-            spectrum.tree_lines.item(item, text=item_text[2:], tags="")
-        spectrum.tree_lines.selection_remove(item)
-
-    update_cells_colors(plot_data(spectrum.selected_lines))
-
-def set_plot_spectrum():
-    plt.grid(True)
-    plt.xlabel("Частота, Гц")
-    plt.xlim((-5,32))
-    plt.ylabel("Амплитуда")
-
 
 #creating main window
 #root is a reference to manipulate main frame
@@ -449,7 +465,7 @@ for i, command in {
 
 spectrum = Spectrum()
 # spectrumm button, opens new window
-spectrumButton = tk.Button(root, text="Получить спектр", command=spectrum.create_additional_window)
+spectrumButton = tk.Button(root, text="Получить спектр", command=spectrum.prepare_to_create)
 spectrumButton.pack()
 
 #Combobox is a widget that combines a text field
