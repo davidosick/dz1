@@ -4,6 +4,7 @@ from tkinter import ttk, filedialog, messagebox
 import numpy
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_hex
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.widgets import Slider
@@ -88,22 +89,35 @@ class Spectrum:
         for i in range(len(self.all_values)):
             self.tree_lines.insert("", tk.END, text=f"График спектра ({i + 1})")
 
-    def plot_data_spectrum(self):
+    def plot_data_spectrum(self) -> list[Line2D]:
         # removes the figure
         self.fig_spectrum.clear()
         self.fig_spectrum.add_axes((0.2, 0.2, 0.6, 0.6))
         
         if len(self.selected_lines) > 0:
-            for i in self.selected_lines:
+            line_objects = [
                 self.fig_spectrum.axes[0].stem(
                     numpy.arange(len(spectrum.all_values[i])), 
                     numpy.abs(spectrum.all_values[i]),
-                    label=f"{LABELS[combobox.current()]}({i + 1})",
-                    linefmt=f'C{i}', markerfmt=f'o', basefmt=f'C{i}')
+                    label=f"|FI|({i + 1})",
+                    linefmt=f'C{index}', markerfmt=f'o', basefmt=f'C{index}').baseline
+                for index, i in enumerate(self.selected_lines)
+            ]
             self.fig_spectrum.legend()
+        else:
+            line_objects = []
         
         self.set_plot_spectrum()
         self.canvas_spectrum.draw()
+        return line_objects
+    
+    def update_cells_colors(self, line_objects: list[Line2D]) -> None:
+        for index, (item, line_object) in enumerate(zip(self.selected_lines, line_objects)):
+            self.tree_lines.tag_configure(f'mytag_{index}',
+                background=to_hex(line_object.get_color()),
+                foreground='white'
+            )
+            self.tree_lines.item(self.tree_lines.get_children()[item], tags=(f'mytag_{index}',))
     
     def clear_list_on_select(self):
         self.clear_scene()
@@ -122,13 +136,13 @@ class Spectrum:
                 self.tree_lines.item(item, text=item_text[2:], tags="")
             self.tree_lines.selection_remove(item)
 
-        self.plot_data_spectrum()
+        self.update_cells_colors(self.plot_data_spectrum())
 
     def set_plot_spectrum(self):
         self.fig_spectrum.axes[0].grid(True)
         self.fig_spectrum.axes[0].set_xlabel("Частота, Гц")
         self.fig_spectrum.axes[0].set_ylabel("Амплитуда")
-        self.fig_spectrum.axes[0].set_xlim((-5,32))
+        self.fig_spectrum.axes[0].set_xlim((0,32))
     
     def clear_scene(self):
         self.update_chart_list()
@@ -420,7 +434,7 @@ def tree_on_select(_) -> None:
 def update_cells_colors(line_objects: list[Line2D]) -> None:
     for index, (item, line_object) in enumerate(zip(selected_items, line_objects)):
         tree.tag_configure(f'mytag_{index}',
-                           background=str(line_object.get_color()),
+                           background=to_hex(line_object.get_color()),
                            foreground='white')
         tree.item(tree.get_children()[item], tags=(f'mytag_{index}',))
 
@@ -460,7 +474,7 @@ for i, command in {
 
 spectrum = Spectrum()
 # spectrumm button, opens new window
-spectrumButton = tk.Button(root, text="Получить спектр", command=spectrum.prepare_to_create)
+spectrumButton = ttk.Button(root, text="Получить спектр", command=spectrum.prepare_to_create)
 spectrumButton.pack()
 
 #Combobox is a widget that combines a text field
