@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+
+import numpy
 import scipy
 
 import matplotlib.pyplot as plt
@@ -53,10 +55,10 @@ class Spectrum:
         self.fig_spectrum = plt.figure()
         set_plot_spectrum()
 
-        self.get_values()
-
         self.canvas_spectrum = FigureCanvasTkAgg(self.fig_spectrum, master=self.additional_window)
         self.canvas_spectrum.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=tk.TRUE)
+        self.get_values()
+        self.plot_data_spectrum()
 
     def get_values(self):
         self.current_numbers = NUMBERS[ComboboxSelection.CURRENT]
@@ -66,8 +68,11 @@ class Spectrum:
             self.all_values = self.get_list_of_spectrum_elements()
             self.clear_scene()
     def get_list_of_spectrum_elements(self) -> list[list[float]]:
+        print([[current_elem
+                 for current_elem in numpy.fft.fft(current_line_data[:63])]
+                for current_line_data in self.current_numbers])
         return [[current_elem
-                 for i, current_elem in scipy.fft(current_line_data)]
+                 for current_elem in numpy.fft.fft(current_line_data[:63])]
                 for current_line_data in self.current_numbers]
     # def get_list_of_spectrum_elements_x(self):
     #     return [[current_elem
@@ -80,26 +85,18 @@ class Spectrum:
         for i in range(80):
             self.tree_lines.insert("", tk.END, text=f"График спектра ({i + 1})")
 
-    def plot_data_spectrum(self, data: list[int]) -> list[Line2D]:
+    def plot_data_spectrum(self):
         # removes the figure
         plt.clf()
 
-        if len(data) <= 0:
-            line_objects = []
-        else:
-            time_seconds = [i / 10 / 80 for i in range(700)]  # length of the row is always 80
-            line_objects = [plt.plot(time_seconds, self.all_values[i],
-                                     label=f"({i + 1})")[0]
-                            for i in data]
+        plt.stem(numpy.arange(len(spectrum.all_values[0])), numpy.abs(spectrum.all_values[0]))
 
-            plt.legend(fontsize="x-large")
 
         set_plot_spectrum()
         self.canvas_spectrum.draw()
-        return line_objects
     def clear_scene(self):
         self.update_chart_list()
-        self.plot_data_spectrum(self.selected_lines)
+        self.plot_data_spectrum()
 
 class ComboboxSelection:
     VOLTAGE = 0
@@ -417,7 +414,7 @@ def plot_spectrum(data: list[int]) -> list[Line2D]:
 def set_plot_spectrum():
     plt.grid(True)
     plt.xlabel("Частота, Гц")
-    plt.xlim((0, 1 / 10))
+    plt.xlim((-5,32))
     plt.ylabel("Амплитуда")
 
 
