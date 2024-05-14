@@ -5,3 +5,8 @@ venv/
 
 samples/
 output/
+
+build/
+dist/
+
+*.spec
